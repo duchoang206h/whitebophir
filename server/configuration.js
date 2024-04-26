@@ -1,6 +1,5 @@
 const path = require("path");
 const app_root = path.dirname(__dirname); // Parent of the directory where this file is
-
 module.exports = {
   /** Port on which the application will listen */
   PORT: parseInt(process.env["PORT"]) || 8080,
@@ -62,4 +61,10 @@ module.exports = {
 
   /** If this variable is set, automatically redirect to this board from the root of the application. */
   DEFAULT_BOARD: process.env["WBO_DEFAULT_BOARD"],
+
+  FILE_STORE: process.env["FILE_STORE"] || "local",
+  S3_BUCKET: process.env["S3_BUCKET"],
+  S3_ACCESS_KEY: process.env["S3_ACCESS_KEY"],
+  S3_SECRET_KEY: process.env["S3_SECRET_KEY"],
+  S3_REGION: process.env["S3_REGION"] || "ap-southeast-1",
 };

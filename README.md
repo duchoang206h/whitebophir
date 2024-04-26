@@ -142,8 +142,19 @@ Some important environment variables are :
 
 - `WBO_HISTORY_DIR` : configures the directory where the boards are saved. Defaults to `./server-data/`.
 - `WBO_MAX_EMIT_COUNT` : the maximum number of messages that a client can send per unit of time. Increase this value if you want smoother drawings, at the expense of being susceptible to denial of service attacks if your server does not have enough processing power. By default, the units of this quantity are messages per 4 seconds, and the default value is `192`.
-- `AUTH_SECRET_KEY` : If you would like to authenticate your boards using jwt, this declares the secret key.
+- `AUTH_SECRET_KEY` : If you would like to authenticate your boards using jwt, this declares the secret key. 
 
+S3 store:
+ - `FILE_STORE`: set to `s3`
+ - `S3_BUCKET`: your s3 bucket
+ - `S3_ACCESS_KEY`: your s3 access key
+ - `S3_SECRET_KEY`: your s3 secret key
+ - `S3_REGION`: your s3 region
+
+Run with docker:
+```bash 
+docker run -d -p 5001:5001 -e FILE_STORE=s3 -e S3_BUCKET=s3_bucket -e S3_ACCESS_KEY=s3_access_key -e S3_SECRET_KEY=s3_secret_key -e S3_REGION=s3_region --name wbo duchoang206h/wbo
+```
 ## Troubleshooting
 
 If you experience an issue or want to propose a new feature in WBO, please [open a github issue](https://github.com/lovasoa/whitebophir/issues/new).

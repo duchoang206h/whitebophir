@@ -30,6 +30,7 @@ var fs = require("./fs_promises.js"),
   path = require("path"),
   config = require("./configuration.js"),
   Mutex = require("async-mutex").Mutex,
+  FileStore = require("./fileStore.js").FileStore,
   jwtauth = require("./jwtBoardnameAuth.js");
 
 /**
@@ -39,15 +40,14 @@ var fs = require("./fs_promises.js"),
 class BoardData {
   /**
    * @param {string} name
+   * @param { FileStore} fileStore
    */
-  constructor(name) {
+  constructor(name, fileStore) {
     this.name = name;
     /** @type {{[name: string]: BoardElem}} */
     this.board = {};
-    this.file = path.join(
-      config.HISTORY_DIR,
-      "board-" + encodeURIComponent(name) + ".json",
-    );
+    this.fileStore = fileStore;
+    this.file = this.fileStore.getPath(this.name);
     this.lastSaveDate = Date.now();
     this.users = new Set();
     this.saveMutex = new Mutex();
@@ -223,13 +223,11 @@ class BoardData {
   async _unsafe_save() {
     this.lastSaveDate = Date.now();
     this.clean();
-    var file = this.file;
-    var tmp_file = backupFileName(file);
     var board_txt = JSON.stringify(this.board);
     if (board_txt === "{}") {
       // empty board
       try {
-        await fs.promises.unlink(file);
+        /// await fs.promises.unlink(file);
         log("removed empty board", { board: this.name });
       } catch (err) {
         if (err.code !== "ENOENT") {
@@ -239,8 +237,7 @@ class BoardData {
       }
     } else {
       try {
-        await fs.promises.writeFile(tmp_file, board_txt, { flag: "wx" });
-        await fs.promises.rename(tmp_file, file);
+        await this.fileStore.save(this.name, board_txt);
         log("saved board", {
           board: this.name,
           size: board_txt.length,
@@ -250,7 +247,6 @@ class BoardData {
         log("board saving error", {
           board: this.name,
           err: err.toString(),
-          tmp_file: tmp_file,
         });
         return;
       }
@@ -305,48 +301,33 @@ class BoardData {
   /** Load the data in the board from a file.
    * @param {string} name - name of the board
    */
-  static async load(name) {
-    var boardData = new BoardData(name),
-      data;
+  async load() {
+    let data;
     try {
-      data = await fs.promises.readFile(boardData.file);
-      boardData.board = JSON.parse(data);
-      for (const id in boardData.board) boardData.validate(boardData.board[id]);
-      log("disk load", { board: boardData.name });
+      data = await this.fileStore.load(this.name);
+      this.board = JSON.parse(data);
+      for (const id in this.board) this.validate(this.board[id]);
+      log("disk load", { board: this.name });
     } catch (e) {
       // If the file doesn't exist, this is not an error
       if (e.code === "ENOENT") {
-        log("empty board creation", { board: boardData.name });
+        log("empty board creation", { board: this.name });
       } else {
         log("board load error", {
-          board: name,
+          board: this.name,
           error: e.toString(),
           stack: e.stack,
         });
       }
-      boardData.board = {};
+      this.board = {};
       if (data) {
-        // There was an error loading the board, but some data was still read
-        var backup = backupFileName(boardData.file);
-        log("Writing the corrupted file to " + backup);
         try {
-          await fs.promises.writeFile(backup, data);
-        } catch (err) {
-          log("Error writing " + backup + ": " + err);
-        }
+          await this.fileStore.save(this.name, data);
+        } catch (err) {}
       }
     }
-    return boardData;
+    return this;
   }
-}
-
-/**
- * Given a board file name, return a name to use for temporary data saving.
- * @param {string} baseName
- */
-function backupFileName(baseName) {
-  var date = new Date().toISOString().replace(/:/g, "");
-  return baseName + "." + date + ".bak";
 }
 
 module.exports.BoardData = BoardData;

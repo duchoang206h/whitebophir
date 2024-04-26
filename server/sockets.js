@@ -1,3 +1,6 @@
+const configuration = require("./configuration");
+const { newFileStore } = require("./fileStore.js");
+
 var iolib = require("socket.io"),
   { log, gauge, monitorFunction } = require("./log.js"),
   BoardData = require("./boardData.js").BoardData,
@@ -8,7 +11,10 @@ var iolib = require("socket.io"),
   @type {{[boardName: string]: Promise<BoardData>}}
 */
 var boards = {};
-
+/**
+ * @description File store configuration
+ */
+const fileStore = newFileStore(configuration.FILE_STORE);
 /**
  * Prevents a function from throwing errors.
  * If the inner function throws, the outer function just returns undefined
@@ -59,7 +65,7 @@ function getBoard(name) {
   if (boards.hasOwnProperty(name)) {
     return boards[name];
   } else {
-    var board = BoardData.load(name);
+    var board = new BoardData(name, fileStore).load();
     boards[name] = board;
     gauge("boards in memory", Object.keys(boards).length);
     return board;
