@@ -1,22 +1,17 @@
-FROM node:20-alpine3.17
 
+# Stage 1: Build stage
+FROM node:20-alpine3.17 AS build
 WORKDIR /opt/app
-
-RUN chown -R 1000:1000 /opt/app
-
-# Allow node to bind to port 80
-RUN apk update && apk add libcap
-RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/node
-
-USER 1000:1000
-
 COPY package.json package-lock.json ./
 RUN npm ci --production
-COPY --chown=1000:1000 . .
-
-ENV PORT=80
-EXPOSE 80
-
+COPY . .
+# Stage 2: Production stage
+FROM node:20-alpine3.17 AS production
+WORKDIR /opt/app
+COPY --from=build /opt/app .
+RUN chown -R 1000:1000 /opt/app
+ENV PORT=5001
+EXPOSE 5001
 VOLUME /opt/app/server-data
-
-CMD ["/usr/local/bin/node", "server/server.js"]
+USER 1000:1000
+CMD ["node", "server/server.js"]
