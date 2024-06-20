@@ -1,10 +1,10 @@
-function showRecentBoards() {
+async function showRecentBoards() {
   var parent = document.getElementById("recent-boards");
   var ul = document.querySelector("#recent-boards ul");
   ul && parent.removeChild(ul);
   parent.classList.add("hidden");
-
-  var recentBoards = JSON.parse(localStorage.getItem("recent-boards")) || [];
+  const res = await fetch(`/list_board`).then((res) => res.json());
+  var recentBoards = res || [];
   if (recentBoards.length === 0) return;
 
   var list = document.createElement("ul");
