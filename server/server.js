@@ -101,7 +101,7 @@ function validateBoardName(boardName) {
 /**
  * @type {import('http').RequestListener}
  */
-function handleRequest(request, response) {
+async function handleRequest(request, response) {
   var parsedUrl = new URL(request.url, "http://wbo/");
   var parts = parsedUrl.pathname.split("/");
 
@@ -135,7 +135,13 @@ function handleRequest(request, response) {
         fileserver(request, response, serveError(request, response));
       }
       break;
-
+    case "list_board":
+      const boards = await sockets.fileStore.list();
+      response.writeHead(200, {
+        "Content-Type": "application/json",
+      });
+      response.end(JSON.stringify(boards));
+      break;
     case "download":
       var boardName = validateBoardName(parts[1]),
         history_file = path.join(

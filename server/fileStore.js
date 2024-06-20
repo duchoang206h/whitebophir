@@ -24,6 +24,11 @@ class FileStore {
    * @returns {Promise<string>}
    */
   async load(name) {}
+  /**
+   * @param {string} name
+   * @returns {Promise<[string]>}
+   */
+  async list(name = ``) {}
 }
 class DiskStore extends FileStore {
   constructor() {
@@ -53,6 +58,16 @@ class DiskStore extends FileStore {
       return "{}";
     }
   }
+  /**
+   * @param {string} name
+   * @returns {Promise<[string]>}
+   */
+  async list(name = ``) {
+    const files = await fs.readdir(config.HISTORY_DIR);
+    return files
+      .filter((f) => f !== ".gitignore")
+      .map((f) => f.replace(`board-`, "").replace(`.json`, ``));
+  }
 }
 class S3Store extends FileStore {
   constructor() {
@@ -69,7 +84,9 @@ class S3Store extends FileStore {
     this.s3 = new AWS.S3();
   }
   getPath(name) {
-    return `https://${this.bucket}.amazonaws.com/boards/${encodeURIComponent(name)}.json`;
+    return `https://${this.bucket}.amazonaws.com/boards/${encodeURIComponent(
+      name,
+    )}.json`;
   }
   async save(name, data) {
     try {
@@ -95,6 +112,16 @@ class S3Store extends FileStore {
       log("error", { error: error.toString() });
       return "{}";
     }
+  }
+  async list(name = ``) {
+    const params = {
+      Bucket: this.bucket,
+      Prefix: "boards",
+    };
+    const files = await this.s3.listObjectsV2(params).promise();
+    return files.Contents.map((c) =>
+      decodeURIComponent(c.Key.replace(`boards/`, ``).replace(`.json`, ``)),
+    );
   }
 }
 /**

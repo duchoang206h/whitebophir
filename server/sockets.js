@@ -220,4 +220,5 @@ function generateUID(prefix, suffix) {
 
 if (exports) {
   exports.start = startIO;
+  exports.fileStore = fileStore;
 }
